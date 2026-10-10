@@ -3,12 +3,9 @@ package org.futo.inputmethod.latin.uix.actions.clipboard
 import android.content.ClipDescription
 import android.content.ClipboardManager
 import android.content.Context
-import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.collection.LruCache
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -63,18 +60,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.core.util.AtomicFile
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
-import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.lifecycle.LifecycleCoroutineScope
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -90,6 +84,9 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.Json
 import org.futo.inputmethod.latin.R
+import org.futo.inputmethod.latin.kbfr.ClipboardSensitivity
+import org.futo.inputmethod.latin.kbfr.KbfrState
+import org.futo.inputmethod.latin.settings.Settings
 import org.futo.inputmethod.latin.common.Constants
 import org.futo.inputmethod.latin.uix.Action
 import org.futo.inputmethod.latin.uix.ActionHeaderSearch
@@ -99,12 +96,9 @@ import org.futo.inputmethod.latin.uix.PersistentActionState
 import org.futo.inputmethod.latin.uix.PersistentStateInitialization
 import org.futo.inputmethod.latin.uix.QuickClip
 import org.futo.inputmethod.latin.uix.SettingsKey
-import org.futo.inputmethod.latin.uix.actions.BugInfo
 import org.futo.inputmethod.latin.uix.actions.BugViewerAction
-import org.futo.inputmethod.latin.uix.actions.BugViewerState
 import org.futo.inputmethod.latin.uix.actions.PasteAction
 import org.futo.inputmethod.latin.uix.actions.fonttyper.SuperheroRenderer
-import org.futo.inputmethod.latin.uix.actions.throwIfDebug
 import org.futo.inputmethod.latin.uix.getSetting
 import org.futo.inputmethod.latin.uix.getSettingBlocking
 import org.futo.inputmethod.latin.uix.getUnlockedSetting
@@ -112,8 +106,7 @@ import org.futo.inputmethod.latin.uix.isDirectBootUnlocked
 import org.futo.inputmethod.latin.uix.setSetting
 import org.futo.inputmethod.latin.uix.settings.ScrollableList
 import org.futo.inputmethod.latin.uix.settings.SettingSlider
-import org.futo.inputmethod.latin.uix.settings.SettingToggleDataStore
-import org.futo.inputmethod.latin.uix.settings.SettingToggleRaw
+import org.futo.inputmethod.latin.uix.settings.Tip
 import org.futo.inputmethod.latin.uix.settings.UserSetting
 import org.futo.inputmethod.latin.uix.settings.UserSettingsMenu
 import org.futo.inputmethod.latin.uix.settings.pages.ParagraphText
@@ -121,35 +114,30 @@ import org.futo.inputmethod.latin.uix.settings.pages.PaymentSurface
 import org.futo.inputmethod.latin.uix.settings.pages.PaymentSurfaceHeading
 import org.futo.inputmethod.latin.uix.settings.useDataStore
 import org.futo.inputmethod.latin.uix.settings.useDataStoreValue
+import org.futo.inputmethod.latin.uix.settings.userSettingDecorationOnly
 import org.futo.inputmethod.latin.uix.settings.userSettingToggleDataStore
 import org.futo.inputmethod.latin.uix.theme.Typography
 import java.io.File
-import java.security.MessageDigest
-import kotlin.math.roundToInt
 
 val ClipboardHistoryEnabled = SettingsKey(
     booleanPreferencesKey("enableClipboardHistory"),
     false
 )
 
+// kbfr fork: at most 20 items for 1 hour by default (spec 5.5, 6)
 val ClipboardHistoryItemsToKeep = SettingsKey(
     intPreferencesKey("clipboard_history_items_to_keep"),
-    25
+    20
 )
 
 val ClipboardHistoryTimeToKeep = SettingsKey(
     intPreferencesKey("clipboard_history_time_to_keep"),
-    3 * 24
+    1
 )
 
 val ClipboardHistoryUnpinnedFileMbToKeep = SettingsKey(
     intPreferencesKey("clipboard_history_unpinned_file_mb_to_keep"),
     40
-)
-
-val ClipboardHistorySaveSensitive = SettingsKey(
-    booleanPreferencesKey("clipboard_history_save_sensitive"),
-    false
 )
 
 val ClipboardShowPinnedOnTop = SettingsKey(
@@ -172,19 +160,9 @@ val ClipboardSkipDeleteConfirmation = SettingsKey(
     false
 )
 
-val ClipboardSaveImages = SettingsKey(
-    booleanPreferencesKey("clipboard_save_images"),
-    true
-)
-
 val ClipboardSaveScreenshots = SettingsKey(
     booleanPreferencesKey("clipboard_save_screenshots"),
     false
-)
-
-val ClipboardLastBackup = SettingsKey(
-    longPreferencesKey("clipboard_last_backup"),
-    0
 )
 
 
@@ -213,6 +191,9 @@ data class ClipboardEntry(
 
     val backingFile: String? = null,
     val sizeMb: Float? = null,
+
+    // kbfr fork: shown masked and removed after ClipboardSensitivity.SENSITIVE_TTL_MS (spec 5.5)
+    val sensitive: Boolean = false,
 )
 
 fun ClipboardEntry.getFile(context: Context): File? =
@@ -374,7 +355,9 @@ fun ClipboardEntryView(modifier: Modifier, clipboardEntry: ClipboardEntry, onPas
             }
 
             if(clipboardEntry.text != null) {
-                val text = remember(clipboardEntry.text) { sanitizeClipboardText(clipboardEntry.text) }
+                val text = remember(clipboardEntry.text, clipboardEntry.sensitive) {
+                    if(clipboardEntry.sensitive) ClipboardSensitivity.MASK else sanitizeClipboardText(clipboardEntry.text)
+                }
                 Text(text, modifier = Modifier.padding(8.dp, 2.dp), style = Typography.SmallMl)
             }
 
@@ -470,11 +453,12 @@ class ClipboardHistoryManager(val context: Context, val coroutineScope: Lifecycl
 
     private val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
 
+    // kbfr fork: the history lives in RAM only and holds text only (spec 5.5, R4). The files below
+    // are never written; they are only deleted, in case an older version or an import left them.
     val clipboardHistory = mutableStateListOf<ClipboardEntry>()
 
     // Primary file
     val clipboardFile = context.clipboardFile
-    val atomicClipboardFile = AtomicFile(clipboardFile)
 
     // Backup in case primary gets corrupted somehow
     val clipboardFileBak = File(context.filesDir, "$ClipboardFileName.backup")
@@ -483,11 +467,9 @@ class ClipboardHistoryManager(val context: Context, val coroutineScope: Lifecycl
     // Temporary file used during saving, after writing we delete previous backup, move primary to backup, move swap to primary
     val clipboardFileSwap = File(context.filesDir, "$ClipboardFileName.swap")
 
-    var clipboardLoaded = false
-
     private val screenshotHelper = ScreenshotHelper(context, coroutineScope, object : ScreenshotListener {
         override fun onScreenshotAdded(mime: String, uri: Uri) {
-            onImageAdded(listOf(mime), uri, keepUri = true)
+            // kbfr fork: text only, screenshots are not kept
         }
 
         override fun onScreenshotChange(
@@ -509,80 +491,12 @@ class ClipboardHistoryManager(val context: Context, val coroutineScope: Lifecycl
         loadClipboard()
     }
 
-    internal fun onImageAdded(mimeTypes: List<String>, uri: Uri, timestamp: Long = System.currentTimeMillis(), keepUri: Boolean = false) {
-        // We may get exceptions here from opening uri, invalid image, etc
-        // so let's just ignore them
-        try {
-            val targetMime = mimeTypes.firstOrNull { it == "image/png" }
-                ?: mimeTypes.firstOrNull { it == "image/jpeg" || it == "image/jpg" }
-                ?: mimeTypes.firstOrNull { it == "image/webp" }
-                ?: return
-
-            val resolver = context.contentResolver
-            val stream = resolver.openInputStream(uri) ?: return
-            val md = MessageDigest.getInstance("MD5")
-            val buffer = ByteArray(8 * 1024)
-            var totalBytes = 0L
-            var bytesRead: Int
-
-            val tempFile = File(context.cacheDir, "temp_img")
-            tempFile.outputStream().use { out ->
-                while (stream.read(buffer).also { bytesRead = it } != -1) {
-                    totalBytes += bytesRead
-                    if (totalBytes > 10 * 1024 * 1024) {
-                        tempFile.delete()
-                        return
-                    }
-                    md.update(buffer, 0, bytesRead)
-                    out.write(buffer, 0, bytesRead)
-                }
-            }
-            stream.close()
-
-            val md5Hex = md.digest().joinToString("") { "%02x".format(it) }
-            val extension = when (targetMime) {
-                "image/png" -> "png"
-                "image/jpeg", "image/jpg" -> "jpg"
-                "image/webp" -> "webp"
-                else -> "img"
-            }
-
-            context.clipboardDir.mkdirs()
-            val finalFile = File(context.clipboardDir, "$md5Hex.$extension")
-            if (!finalFile.exists()) {
-                tempFile.renameTo(finalFile)
-                ClipboardUtil.generateThumbnail(finalFile)
-            } else {
-                tempFile.delete()
-            }
-
-            val isAlreadyPinned = clipboardHistory.firstOrNull {
-                it.backingFile == finalFile.name && it.pinned
-            }?.pinned == true
-
-            clipboardHistory.removeAll { it.backingFile == finalFile.name }
-
-            val newEntry = ClipboardEntry(
-                timestamp = timestamp,
-                pinned = isAlreadyPinned,
-                text = null,
-                uri = if(keepUri) uri else null,
-                backingFile = finalFile.name,
-                sizeMb = totalBytes / (1024f * 1024f),
-                mimeTypes = listOf(targetMime)
-            )
-            clipboardHistory.add(newEntry)
-        }catch(e: Exception) {
-            throwIfDebug(e)
-        } finally {
-            saveClipboard()
-        }
-    }
+    // kbfr fork: counts the clipboard changes this keyboard has seen (spec 5.5, see expireSensitiveClip)
+    private var clipChanges = 0
 
     private val primaryClipChangedListener = object : ClipboardManager.OnPrimaryClipChangedListener {
             override fun onPrimaryClipChanged() {
-                if (!context.getSettingBlocking(ClipboardHistoryEnabled)) return
-
+                clipChanges++
                 val clip = try {
                     clipboardManager.primaryClip
                 } catch(_: Exception) {
@@ -604,10 +518,20 @@ class ClipboardHistoryManager(val context: Context, val coroutineScope: Lifecycl
                     textChrSeq = null
                 }
 
-                val text = textChrSeq?.toString()
+                // kbfr fork: text only, images are not kept
+                val text = textChrSeq?.toString() ?: return
 
-                // Nothing to save here
-                if(text == null && uri == null) return
+                // kbfr fork: sensitive clips (spec 5.5) expire even with the history turned off, so
+                // the system clipboard is cleared anyway. "Copied in a blocked context" is judged by
+                // the field the keyboard is serving when the copy happens.
+                val isSensitive = clip?.description?.extras?.getBoolean(
+                    ClipDescription.EXTRA_IS_SENSITIVE, false
+                ) == true
+                        || Settings.getInstance().current?.mInputAttributes?.mPrivacyPolicy?.clipboardSensitive == true
+                        || ClipboardSensitivity.looksSensitive(text)
+                if(isSensitive) expireSensitiveClip(text)
+
+                if (!context.getSettingBlocking(ClipboardHistoryEnabled)) return
 
                 val timestamp = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     clip?.description?.timestamp
@@ -615,37 +539,55 @@ class ClipboardHistoryManager(val context: Context, val coroutineScope: Lifecycl
                     null
                 } ?: System.currentTimeMillis()
 
+                val isAlreadyPinned = clipboardHistory.firstOrNull {
+                    (it.text != null && it.text == text) && it.pinned
+                }?.pinned == true
 
-                val canSaveSensitive = context.getSetting(ClipboardHistorySaveSensitive)
-                val canSaveImages = context.getSetting(ClipboardSaveImages)
-                val isSensitive = clip?.description?.extras?.getBoolean(
-                    ClipDescription.EXTRA_IS_SENSITIVE, false
-                ) == true
+                clipboardHistory.removeAll { it.text != null && it.text == text }
 
-                if(isSensitive && !canSaveSensitive) return
+                val newEntry = ClipboardEntry(
+                    timestamp = timestamp,
+                    pinned = isAlreadyPinned,
+                    text = text,
+                    uri = null,
+                    mimeTypes = mimeTypes,
+                    sensitive = isSensitive,
+                )
+                clipboardHistory.add(newEntry)
+            }
+        }
 
-                if(text != null) {
-                    val isAlreadyPinned = clipboardHistory.firstOrNull {
-                        (it.text != null && it.text == text) && it.pinned
-                    }?.pinned == true
+    // kbfr fork: after a fixed 60 s a sensitive clip leaves the history, and the system clipboard is
+    // cleared too if it still holds that clip (spec 5.5). Meanwhile a Ctrl+V of it contaminates the
+    // field (R3); finally, so the text does not outlive its 60 s if the scope is cancelled.
+    private fun expireSensitiveClip(text: String) {
+        KbfrState.addLiveSensitiveClip(text)
+        val change = clipChanges
+        coroutineScope.launch {
+            try {
+                delay(ClipboardSensitivity.SENSITIVE_TTL_MS)
+            } finally {
+                KbfrState.removeLiveSensitiveClip(text)
+            }
+            clipboardHistory.removeAll { it.sensitive && it.text == text }
 
-                    clipboardHistory.removeAll { it.text != null && it.text == text }
-
-                    val newEntry = ClipboardEntry(
-                        timestamp = timestamp,
-                        pinned = isAlreadyPinned,
-                        text = text,
-                        uri = null,
-                        mimeTypes = mimeTypes
-                    )
-                    clipboardHistory.add(newEntry)
-
-                    saveClipboard()
-                }else if (uri != null && canSaveImages) {
-                    onImageAdded(mimeTypes, uri, timestamp)
+            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                val current = try {
+                    clipboardManager.primaryClip?.getItemAt(0)?.coerceToText(context)?.toString()
+                } catch(_: Exception) {
+                    null
+                }
+                // A sensitive clip once outlived its 60 s on one phone, which only a failed or empty read
+                // explains: then the clip is still this one if nothing was copied since.
+                if(current == text || (current == null && clipChanges == change)) {
+                    try {
+                        clipboardManager.clearPrimaryClip()
+                        QuickClip.markQuickClipDismissed()
+                    } catch(_: Exception) { }
                 }
             }
         }
+    }
 
     init {
         coroutineScope.launch {
@@ -664,7 +606,8 @@ class ClipboardHistoryManager(val context: Context, val coroutineScope: Lifecycl
 
     private suspend fun onClipboardImported(file: File) {
         migrateLegacyClipboardBak()
-        val data = decodeFile(file).map {
+        // kbfr fork: an imported backup goes into RAM (text items only) and its files are deleted
+        val data = decodeFile(file).filter { it.text != null }.map {
             // Restore all saved items
             it.copy(timestamp = System.currentTimeMillis())
         }
@@ -672,10 +615,9 @@ class ClipboardHistoryManager(val context: Context, val coroutineScope: Lifecycl
         withContext(Dispatchers.Main) {
             clipboardHistory.clear()
             clipboardHistory.addAll(data)
-            clipboardLoaded = true
         }
 
-        saveClipboard()
+        withContext(ClipboardIOContext) { deleteClipboard() }
     }
 
     suspend fun pruneOldItems() = withContext(Dispatchers.Main) {
@@ -749,105 +691,14 @@ class ClipboardHistoryManager(val context: Context, val coroutineScope: Lifecycl
         if(clipboardFileBakLegacy.exists()) { clipboardFileBakLegacy.renameTo(clipboardFileBak) }
     }
 
-    var saveClipboardLoadJob: Job? = null
-    var lastClipboardWritten: List<ClipboardEntry>? = null
-    internal fun saveClipboard(): Job? {
-        if(!context.isDirectBootUnlocked) return null
-        if(!clipboardLoaded) {
-            if(saveClipboardLoadJob?.isActive == true) return null
-
-            val currentEntries = clipboardHistory.toList()
-            saveClipboardLoadJob = coroutineScope.launch {
-                loadClipboard()
-
-                if(clipboardLoaded) {
-                    clipboardHistory.addAll(currentEntries)
-                    saveClipboard()
-                } else {
-                    clipboardIOFailure.value = true
-                }
-            }
-
-            return saveClipboardLoadJob
-        }
-
-        return coroutineScope.launch(context = ClipboardIOContext) {
-            try {
-                val list = withContext(Dispatchers.Main) { clipboardHistory.toList() }
-                val json = Json.encodeToString(list).toByteArray()
-
-                if(list == lastClipboardWritten) return@launch
-
-                // Once every day only
-                val shouldBackup = (System.currentTimeMillis() - context.getSetting(ClipboardLastBackup)) > 1000L * 60L * 60L * 24L * 1L
-                var backupSucceeded = false
-
-
-                withContext(NonCancellable) {
-                    synchronized(atomicClipboardFile) {
-                        migrateLegacyClipboardBak()
-
-                        // Produce a backup
-                        if (clipboardFile.exists() && shouldBackup) {
-                            val existingData = atomicClipboardFile.readFully()
-
-                            val isValid = try {
-                                decodeData(existingData).isNotEmpty()
-                            } catch (_: Exception) {
-                                false
-                            }
-                            if (isValid) {
-                                val atomicBackup = AtomicFile(clipboardFileBak)
-
-                                val stream = atomicBackup.startWrite()
-                                try {
-                                    stream.write(existingData)
-                                    stream.flush()
-                                    atomicBackup.finishWrite(stream)
-                                    backupSucceeded = true
-                                } catch (e: Exception) {
-                                    atomicBackup.failWrite(stream)
-                                }
-                            }
-                        }
-
-                        val stream = atomicClipboardFile.startWrite()
-                        try {
-                            stream.write(json)
-                            stream.flush()
-                            atomicClipboardFile.finishWrite(stream)
-                            lastClipboardWritten = list
-                        } catch (e: Exception) {
-                            atomicClipboardFile.failWrite(stream)
-                            throw e
-                        }
-                    }
-                }
-
-                if(backupSucceeded) {
-                    context.setSetting(ClipboardLastBackup, System.currentTimeMillis())
-                }
-
-                // Finally validate it can be read
-                if (decodeFile(clipboardFile) != list) {
-                    throw Exception("Saved file data does not match expected data")
-                }
-
-                clipboardIOFailure.value = false
-            } catch (e: Exception) {
-                if(e is CancellationException) return@launch
-
-                clipboardIOFailure.value = true
-                clipboardIOFailureReason = e.toString()
-                reportError("saveClipboard", e)
-            }
-        }
-    }
+    // kbfr fork: nothing is ever written to disk (spec R4); the call sites stay as in FUTO.
+    internal fun saveClipboard(): Job? = null
 
     fun deleteClipboard() {
-        listOf(clipboardFile, clipboardFileSwap, clipboardFileBak).forEach {
+        listOf(clipboardFile, clipboardFileSwap, clipboardFileBak, clipboardFileBakLegacy).forEach {
             if(it.exists()) it.delete()
         }
+        context.clipboardDir.deleteRecursively()
     }
 
     private fun decodeData(data: ByteArray): List<ClipboardEntry> =
@@ -856,78 +707,10 @@ class ClipboardHistoryManager(val context: Context, val coroutineScope: Lifecycl
     private fun decodeFile(file: File): List<ClipboardEntry> =
         decodeData(AtomicFile(file).readFully())
 
-    private fun reportError(during: String, e: Exception) {
-        BugViewerState.pushBug(BugInfo("ClipboardHistoryManager", """
-Clipboard IO error during $during
-
-Cause: ${e.message}
-
-Stack trace: ${e.stackTrace.map { it.toString() }}
-
---- main data start --- snip ---
-${if(clipboardFile.exists()) { clipboardFile.readText() } else { "File does not exist" }}
---- main data end --- snip ---
-
-
---- bak data start --- snip ---
-${if(clipboardFileBak.exists()) { clipboardFileBak.readText() } else { "File does not exist" }}
---- bak data end --- snip ---
-
---- swap data start --- snip ---
-${if(clipboardFileSwap.exists()) { clipboardFileSwap.readText() } else { "File does not exist" }}
---- swap data end --- snip ---
-"""))
-    }
-
+    // kbfr fork: nothing is read from disk; files an older version or an import left are deleted.
     private suspend fun loadClipboard() = withContext(ClipboardIOContext) {
-        if(!context.isDirectBootUnlocked) {
-            clipboardIOFailureReason = "Direct Boot not unlocked"
-            clipboardIOFailure.value = true
-            return@withContext
-        }
-
-        val clipboardSetting = context.getUnlockedSetting(ClipboardHistoryEnabled)
-        if(clipboardSetting == null) {
-            clipboardIOFailureReason = "Settings not unlocked"
-            clipboardIOFailure.value = true
-            return@withContext
-        }
-
-        try {
-            if(clipboardSetting == false) {
-                deleteClipboard()
-            } else if (clipboardFile.exists()) {
-                migrateLegacyClipboardBak()
-                val data = synchronized(atomicClipboardFile) {
-                    try {
-                        decodeFile(clipboardFile)
-                    } catch(e: Exception) {
-                        reportError("loadClipboard main, trying bak", e)
-                        if(clipboardFileBak.exists()) {
-                            decodeFile(clipboardFileBak)
-                        } else {
-                            throw e
-                        }
-                    }
-                }
-
-                clipboardHistory.clear()
-                clipboardHistory.addAll(data)
-                pruneOldItems()
-            } else {
-                clipboardHistory.add(DefaultClipboardEntry)
-            }
-
-            clipboardLoaded = true
-            clipboardIOFailureReason = ""
-            clipboardIOFailure.value = false
-        } catch (e: Exception) {
-            e.printStackTrace()
-            clipboardIOFailureReason = "Exception: ${e.message}"
-            clipboardIOFailure.value = true
-
-            reportError("loadClipboard", e)
-        }
+        if(!context.isDirectBootUnlocked) return@withContext
+        deleteClipboard()
     }
 
     fun onPaste(item: ClipboardEntry) {
@@ -1167,9 +950,10 @@ val ClipboardHistoryAction = Action(
                     ScrollableList {
                         PaymentSurface(isPrimary = true) {
                             PaymentSurfaceHeading(title = stringResource(R.string.action_clipboard_manager_error_clipboard_history_disabled_title))
-                            ParagraphText(stringResource(R.string.action_clipboard_manager_error_clipboard_history_disabled_text_v2,
+                            // kbfr fork: hours instead of days, and says the history is RAM-only
+                            ParagraphText(stringResource(R.string.kbfr_clipboard_history_disabled_text,
                                     context.getSetting(ClipboardHistoryItemsToKeep),
-                                    (context.getSetting(ClipboardHistoryTimeToKeep) / 24.0f).roundToInt()
+                                    context.getSetting(ClipboardHistoryTimeToKeep)
                                 )
                             )
                             Button(onClick = {
@@ -1193,7 +977,8 @@ val ClipboardHistoryAction = Action(
                         val clipboardList = run {
                             val filtered = clipboardHistoryManager.clipboardHistory.filter {
                                 !searching.value
-                                        || it.text?.contains(searchQuery, ignoreCase = true) == true
+                                        // kbfr fork: searching must not reveal a masked clip
+                                        || (!it.sensitive && it.text?.contains(searchQuery, ignoreCase = true) == true)
                                         || it.mimeTypes.any { mime ->
                                     mime.contains(
                                         searchQuery,
@@ -1258,6 +1043,8 @@ val ClipboardHistoryAction = Action(
                                     clipboardEntry = entry, onPaste = {
                                         if(it.text != null) {
                                             manager.typeText(it.text)
+                                            // kbfr fork: a sensitive clip contaminates the field (spec R3)
+                                            if(it.sensitive) KbfrState.onSensitivePaste(it.text)
                                         } else if(it.backingFile != null && it.mimeTypes.isNotEmpty()) {
                                             val request = ClipboardProviderState.addRequest(
                                                 ClipboardPasteRequest(
@@ -1284,7 +1071,7 @@ val ClipboardHistoryAction = Action(
                                                 } else {
                                                     resources.getString(
                                                         R.string.action_clipboard_manager_remove_item_confirm_dialog,
-                                                        sanitizeClipboardText(it.text ?: "", 24)
+                                                        if(it.sensitive) ClipboardSensitivity.MASK else sanitizeClipboardText(it.text ?: "", 24)
                                                     )
                                                 },
                                                 listOf(
@@ -1330,51 +1117,7 @@ val ClipboardHistoryAction = Action(
                 setting = ClipboardHistoryEnabled
             ).copy(searchTags = R.string.typing_settings_enable_clipboard_history_tags),
 
-            userSettingToggleDataStore(
-                title = R.string.action_clipboard_manager_settings_save_images,
-                setting = ClipboardSaveImages
-            ).copy(visibilityCheck = { useDataStoreValue(ClipboardHistoryEnabled) }),
-
-            UserSetting(
-                name = R.string.action_clipboard_manager_settings_save_screenshots,
-                component = {
-                    val context = LocalContext.current
-                    val (enabled, setEnabled) = useDataStore(ClipboardSaveScreenshots)
-
-                    val permission = ScreenshotHelper.permission
-
-                    val launcher = rememberLauncherForActivityResult(
-                        ActivityResultContracts.RequestPermission()
-                    ) { isGranted: Boolean ->
-                        if (isGranted) {
-                            setEnabled(true)
-                        } else {
-                            setEnabled(false)
-                        }
-                    }
-
-                    SettingToggleRaw(
-                        title = stringResource(R.string.action_clipboard_manager_settings_save_screenshots),
-                        subtitle = if(enabled) null else stringResource(R.string.action_clipboard_manager_settings_save_screenshots_subtitle),
-                        enabled = enabled,
-                        setValue = {
-                            if(!it) setEnabled(false) else {
-                                if (ContextCompat.checkSelfPermission(
-                                        context,
-                                        permission
-                                    ) == PackageManager.PERMISSION_GRANTED
-                                ) {
-                                    setEnabled(true)
-                                } else {
-                                    launcher.launch(permission)
-                                }
-                            }
-                        }
-                    )
-                },
-                visibilityCheck = { useDataStoreValue(ClipboardHistoryEnabled) && SupportsAddingScreenshots },
-                appearInSearchIfVisibilityCheckFailed = SupportsAddingScreenshots
-            ),
+            // kbfr fork: no "save images" / "save screenshots": the history keeps text only, in RAM
             UserSetting(
                 name = R.string.action_clipboard_manager_settings_maximum_clips,
                 component = {
@@ -1403,18 +1146,8 @@ val ClipboardHistoryAction = Action(
                 visibilityCheck = { useDataStoreValue(ClipboardHistoryEnabled) }
             ),
 
-            UserSetting(
-                name = R.string.action_clipboard_manager_settings_save_sensitive_clips,
-                subtitle = R.string.action_clipboard_manager_settings_save_sensitive_clips_subtitle,
-                component = {
-                    SettingToggleDataStore(
-                        title = stringResource(R.string.action_clipboard_manager_settings_save_sensitive_clips),
-                        subtitle = stringResource(R.string.action_clipboard_manager_settings_save_sensitive_clips_subtitle),
-                        setting = ClipboardHistorySaveSensitive
-                    )
-                },
-                visibilityCheck = { useDataStoreValue(ClipboardHistoryEnabled) }
-            ),
+            // kbfr fork: no "save sensitive clips": they are always kept masked for 60 s (spec 5.5)
+            userSettingDecorationOnly { Tip(stringResource(R.string.kbfr_sensitive_clips_fixed)) },
 
             userSettingToggleDataStore(
                 title = R.string.action_clipboard_manager_settings_show_pinned_above_others,

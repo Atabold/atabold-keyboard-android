@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- kbfr fork: launcher icon background: the blue field with the light rounded square of the logo on it. Where the launcher
+     masks the icon as a rounded square, the field shows as the blue border of the logo. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/ic_launcher_background" />
+    <item android:drawable="@drawable/ic_launcher_card" />
+</layer-list>

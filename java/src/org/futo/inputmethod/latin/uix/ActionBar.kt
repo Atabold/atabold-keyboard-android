@@ -119,6 +119,7 @@ import org.futo.inputmethod.latin.SuggestedWords.SuggestedWordInfo.KIND_EMOJI_SU
 import org.futo.inputmethod.latin.SuggestedWords.SuggestedWordInfo.KIND_TYPED
 import org.futo.inputmethod.latin.SuggestionBlacklist
 import org.futo.inputmethod.latin.common.Constants
+import org.futo.inputmethod.latin.kbfr.KbfrActionIcon
 import org.futo.inputmethod.latin.suggestions.SuggestionStripViewListener
 import org.futo.inputmethod.latin.uix.actions.FavoriteActions
 import org.futo.inputmethod.latin.uix.actions.MoreActionsAction
@@ -555,12 +556,15 @@ fun LazyItemScope.ActionItem(idx: Int, action: Action, onSelect: (Action) -> Uni
         .combinedClickable(
             onLongClick = action.altPressImpl?.let { { onLongSelect(action) } },
             onClick = { onSelect(action) }), contentAlignment = Center) {
-        Icon(
-            painter = painterResource(id = action.icon),
-            contentDescription = stringResource(action.name),
-            tint = contentCol,
-            modifier = Modifier.size(20.dp),
-        )
+        // kbfr fork: state icons (Warm up, Online) and the lock on blocked online actions
+        KbfrActionIcon(action, contentCol, 20.dp) {
+            Icon(
+                painter = painterResource(id = action.icon),
+                contentDescription = stringResource(action.name),
+                tint = contentCol,
+                modifier = Modifier.size(20.dp),
+            )
+        }
     }
 }
 
@@ -592,12 +596,15 @@ fun ActionItemSmall(action: Action, onSelect: (Action) -> Unit, onLongSelect: (A
         },
         contentAlignment = Center
     ) {
-        Icon(
-            painter = painterResource(id = action.icon),
-            contentDescription = stringResource(action.name),
-            tint = fgCol,
-            modifier = Modifier.size(16.dp)
-        )
+        // kbfr fork: state icons (Warm up, Online) and the lock on blocked online actions
+        KbfrActionIcon(action, fgCol, 16.dp) {
+            Icon(
+                painter = painterResource(id = action.icon),
+                contentDescription = stringResource(action.name),
+                tint = fgCol,
+                modifier = Modifier.size(16.dp)
+            )
+        }
     }
 }
 

@@ -43,7 +43,9 @@ import org.futo.inputmethod.latin.uix.settings.useDataStore
 val LAST_UPDATE_CHECK_RESULT = stringPreferencesKey("last_update_check_result")
 val LAST_UPDATE_CHECK_FAILED = booleanPreferencesKey("last_update_check_failed")
 
-val DISABLE_UPDATE_REMINDER = SettingsKey(booleanPreferencesKey("disable_update_reminder"), false)
+// kbfr fork: true by default, so the keyboard does not show the ten-week "check for updates" reminder. Switching off
+// "Disable all update reminders" in the developer settings brings it back.
+val DISABLE_UPDATE_REMINDER = SettingsKey(booleanPreferencesKey("disable_update_reminder"), true)
 
 val DEFER_MANUAL_UPDATE_UNTIL = longPreferencesKey("defer_manual_update_until")
 val DEFERMENT_VERSION = intPreferencesKey("defer_manual_update_version")
@@ -95,14 +97,10 @@ fun Context.openURI(uri: String, newTask: Boolean = false) {
     }
 }
 
+// kbfr fork: "Check for updates manually" (and the keyboard's reminder, off by default above) open this fork's
+// releases. FUTO's manual_update page on keyboard.futo.tech compares the version with FUTO Keyboard's, a different app.
 fun Context.openManualUpdateCheck() {
-    openURI("https://keyboard.futo.tech/manual_update?version=${BuildConfig.VERSION_CODE}&build=${BuildConfig.FLAVOR}".let {
-        if(BuildConfig.BRANCH != "master") {
-            it + "&branch=${BuildConfig.BRANCH}&name=${BuildConfig.VERSION_NAME}"
-        } else {
-            it
-        }
-    }, newTask = true)
+    openURI("https://github.com/Atabold/atabold-keyboard/releases", newTask = true)
 }
 
 @Composable

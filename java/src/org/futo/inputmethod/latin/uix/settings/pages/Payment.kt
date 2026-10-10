@@ -467,6 +467,15 @@ fun PaymentScreen(
         Spacer(Modifier.height(8.dp))
 
         SpacedColumn(32.dp) {
+            // kbfr fork: this screen is FUTO's and is otherwise untouched. The card only says who
+            // gets the money and who made this version.
+            PaymentSurface(isPrimary = false) {
+                TitleAndBodyColumn {
+                    PaymentSurfaceHeading(title = stringResource(R.string.kbfr_payment_notice_title))
+                    ParagraphText(stringResource(R.string.kbfr_payment_notice_body))
+                }
+            }
+
             PaymentSurface(isPrimary = true) {
                 TextColumn {
                     TitleAndBodyColumn {

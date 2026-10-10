@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- kbfr fork: launcher icon for Android 7.0 and 7.1, which cannot show adaptive icons (those are in
+     mipmap-anydpi-v26). The same background and foreground, so no bitmap files are needed. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/ic_launcher_background" />
+    <item android:drawable="@drawable/ic_launcher_foreground" />
+</layer-list>

@@ -110,6 +110,8 @@ import org.futo.inputmethod.event.Event
 import org.futo.inputmethod.latin.AudioAndHapticFeedbackManager
 import org.futo.inputmethod.latin.BuildConfig
 import org.futo.inputmethod.latin.FoldingOptions
+import org.futo.inputmethod.latin.kbfr.KbfrState
+import org.futo.inputmethod.latin.kbfr.KbfrStatusBar
 import org.futo.inputmethod.latin.LanguageSwitcherDialog
 import org.futo.inputmethod.latin.LatinIME
 import org.futo.inputmethod.latin.R
@@ -410,6 +412,10 @@ class UixActionKeyboardManager(val uixManager: UixManager, val latinIME: LatinIM
     }
 
     override fun sendKeyEvent(keyCode: Int, metaState: Int) {
+        // kbfr fork: Ctrl+V of a sensitive clip contaminates the field (spec R3)
+        if(keyCode == KeyEvent.KEYCODE_V && (metaState and KeyEvent.META_CTRL_ON) != 0) {
+            KbfrState.onClipboardPaste(latinIME)
+        }
         val event = Event.createDownUpKeyEvent(keyCode, metaState)
         latinIME.imeManager.getActiveIME(
             Settings.getInstance().current
@@ -698,6 +704,9 @@ class UixManager(private val latinIME: LatinIME) {
         val actionBarShown = useDataStore(ActionBarDisplayedSetting)
 
         Column {
+            // kbfr fork: red banner while the integrity checks fail (spec 8), short action messages
+            KbfrStatusBar()
+
             // Don't show suggested words when it's not meant to be shown
             val suggestedWordsOrNull = if(shouldShowSuggestionStrip.value) {
                 suggestedWords.value
@@ -1618,6 +1627,8 @@ class UixManager(private val latinIME: LatinIME) {
         }
         inlineStuffHiddenByTyping.value = false
         this.editorInfo = editorInfo
+        // kbfr fork: policy of the new field, observed by the toolbar locks (spec 4, 5)
+        KbfrState.onInputStarted(editorInfo, latinIME.getBaseInputConnection())
 
         currTutorialMode.value = tutorialMode
         tutorialCompleted.value = false

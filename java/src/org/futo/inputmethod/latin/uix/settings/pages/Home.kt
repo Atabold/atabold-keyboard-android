@@ -44,6 +44,7 @@ import org.futo.inputmethod.latin.uix.settings.useDataStoreValue
 import org.futo.inputmethod.latin.uix.settings.userSettingNavigationItem
 import org.futo.inputmethod.latin.uix.theme.Typography
 import org.futo.inputmethod.updates.ConditionalMigrateUpdateNotice
+import org.futo.inputmethod.updates.dismissedMigrateUpdateNotice
 import org.futo.inputmethod.updates.openManualUpdateCheck
 
 val HomeScreenLite = UserSettingsMenu(
@@ -146,6 +147,14 @@ val HomeScreenLite = UserSettingsMenu(
         }),
         //}
 
+        // kbfr fork: "Correction & privacy" (spec 6)
+        userSettingNavigationItem(
+            title = R.string.kbfr_settings_title,
+            style = NavigationItemStyle.HomeSecondary,
+            navigateTo = "kbfr",
+            icon = R.drawable.check_circle
+        ),
+
         userSettingNavigationItem(
             title = R.string.misc_settings_title,
             style = NavigationItemStyle.MiscNoArrow,
@@ -192,6 +201,14 @@ fun HomeScreen(navController: NavHostController = rememberNavController()) {
                 }
             }
 
+            // kbfr fork: FUTO's notice below sends to keyboard.futo.tech, which offers FUTO Keyboard, not this app.
+            // One sentence above it says where this app's new versions are; the notice itself is untouched.
+            if(!useDataStoreValue(dismissedMigrateUpdateNotice)) {
+                PaymentSurface(isPrimary = false) {
+                    ParagraphText(stringResource(R.string.kbfr_updates_note))
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
             ConditionalMigrateUpdateNotice()
             ConditionalUnpaidNoticeWithNav(navController)
 

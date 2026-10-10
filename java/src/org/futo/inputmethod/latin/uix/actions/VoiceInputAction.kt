@@ -4,6 +4,7 @@ import android.content.Intent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
@@ -20,11 +21,13 @@ import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.yield
 import org.futo.inputmethod.latin.R
+import org.futo.inputmethod.latin.kbfr.DictationFormat
 import org.futo.inputmethod.latin.uix.ANIMATE_BUBBLE
 import org.futo.inputmethod.latin.uix.AUDIO_FOCUS
 import org.futo.inputmethod.latin.uix.Action
@@ -56,6 +59,7 @@ import org.futo.voiceinput.shared.types.Language
 import org.futo.voiceinput.shared.types.ModelLoader
 import org.futo.voiceinput.shared.types.getLanguageFromWhisperString
 import org.futo.voiceinput.shared.ui.MicrophoneDeviceState
+import org.futo.voiceinput.shared.ui.RecognizeLoadingCircle
 import org.futo.voiceinput.shared.whisper.DecodingConfiguration
 import org.futo.voiceinput.shared.whisper.ModelManager
 import org.futo.voiceinput.shared.whisper.MultiModelRunConfiguration
@@ -221,6 +225,8 @@ private class VoiceInputActionWindow(
             }) {
             Box(modifier = Modifier.align(Alignment.Center)) {
                 when {
+                    // kbfr fork: waiting for the automatic formatting
+                    formatting.value -> Column { RecognizeLoadingCircle(text = stringResource(R.string.kbfr_formatting)) }
                     modelException.value != null -> ModelDownloader(modelException.value!!)
                     recognizerView.value != null -> recognizerView.value!!.Content()
                 }
@@ -229,6 +235,11 @@ private class VoiceInputActionWindow(
     }
 
     override fun close(): CloseResult {
+        // kbfr fork: closed while formatting: the text goes in as dictated
+        pendingText?.let {
+            formatJob?.cancel()
+            inputTransaction.commit(ModelOutputSanitizer.sanitize(it, inputTransaction.textContext))
+        }
         inputTransaction.cancel()
         runBlocking { initJob.cancelAndJoin() }
         recognizerView.value?.cancel()
@@ -262,12 +273,20 @@ private class VoiceInputActionWindow(
         }
     }
 
+    // kbfr fork: the dictated text while it waits for the automatic formatting (spec 5.4), and the
+    // job that formats and inserts it.
+    private var pendingText: String? = null
+    private var formatJob: Job? = null
+    private val formatting = mutableStateOf(false)
+
     override fun finished(result: String) {
         wasFinished = true
 
-        manager.getLifecycleScope().launch(Dispatchers.Main) {
-            val sanitized = ModelOutputSanitizer.sanitize(result, inputTransaction.textContext)
-            inputTransaction.commit(sanitized)
+        pendingText = result
+        formatJob = manager.getLifecycleScope().launch(Dispatchers.Main) {
+            // kbfr fork: formatted before it goes in, or as dictated (spec 5.4)
+            DictationFormat.commit(manager, inputTransaction, result) { formatting.value = true }
+            pendingText = null
             manager.announce(result)
             manager.closeActionWindow()
         }

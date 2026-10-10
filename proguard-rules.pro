@@ -67,3 +67,16 @@
 
 # Keep swipe
 -keep class org.futo.ml.inference.** { *; }
+# kbfr fork (spec R4): release builds write no logs, since they may contain typed text.
+-assumenosideeffects class android.util.Log {
+    public static int v(...);
+    public static int d(...);
+    public static int i(...);
+    public static int w(...);
+    public static int e(...);
+    public static int wtf(...);
+    public static int println(...);
+}
+-assumenosideeffects class java.lang.Throwable {
+    public void printStackTrace();
+}

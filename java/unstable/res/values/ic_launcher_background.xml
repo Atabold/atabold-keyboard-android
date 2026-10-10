@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- kbfr fork: the dev build has the same icon in orange, so the two can be told apart. -->
+    <color name="ic_launcher_background">#C2410C</color>
+    <color name="ic_launcher_card">#FFEDD5</color>
+    <color name="ic_launcher_glyph">#C2410C</color>
+</resources>

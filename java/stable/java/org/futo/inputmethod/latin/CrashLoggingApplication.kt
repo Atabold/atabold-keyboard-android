@@ -19,6 +19,7 @@ import org.acra.builder.ReportBuilder
 import org.acra.config.CoreConfigurationBuilder
 import org.acra.data.CrashReportDataFactory
 import org.futo.inputmethod.latin.settings.Settings
+import org.futo.inputmethod.latin.uix.PreferenceUtils
 import org.futo.inputmethod.latin.uix.isDirectBootUnlocked
 import org.futo.inputmethod.latin.uix.settings.LocalDataStoreCache
 import org.futo.inputmethod.latin.uix.settings.NavigationItem
@@ -56,6 +57,14 @@ class CrashLoggingApplication : Application() /*, Configuration.Provider*/ {
         val userManager = getSystemService(Context.USER_SERVICE) as UserManager
         if(userManager.isUserUnlocked) {
             println("Initializing ACRA, as user is unlocked")
+
+            // kbfr fork: crash reports are opt-in. ACRA stays disabled until the user turns the switch on
+            // (Settings, Correction & privacy), so a crash never opens the dialog that offers to email a
+            // report to FUTO. The switch is ACRA's own preference, so flipping it takes effect at once.
+            PreferenceUtils.getDefaultSharedPreferences(this).let { prefs ->
+                if (!prefs.contains(ACRA.PREF_ENABLE_ACRA)) prefs.edit { putBoolean(ACRA.PREF_ENABLE_ACRA, false) }
+            }
+
             initAcra {
                 reportFormat = StringFormat.JSON
 

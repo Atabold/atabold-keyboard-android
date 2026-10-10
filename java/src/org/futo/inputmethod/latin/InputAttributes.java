@@ -27,6 +27,8 @@ import android.view.inputmethod.EditorInfo;
 import androidx.annotation.Nullable;
 
 import org.futo.inputmethod.latin.common.StringUtils;
+import org.futo.inputmethod.latin.kbfr.InputContextPolicy;
+import org.futo.inputmethod.latin.kbfr.PrivacyPolicy;
 import org.futo.inputmethod.latin.utils.InputTypeUtils;
 
 import java.util.ArrayList;
@@ -67,6 +69,8 @@ public final class InputAttributes {
     final public boolean mIsGeneralTextInput;
     final public boolean mIsWebField;
     final public boolean mNoLearning;
+    // kbfr fork: privacy rules for this field (spec section 4)
+    final public InputContextPolicy mPrivacyPolicy;
     final private int mInputType;
     final private EditorInfo mEditorInfo;
     final private String mPackageNameForPrivateImeOptions;
@@ -79,6 +83,8 @@ public final class InputAttributes {
         final int inputType = null != editorInfo ? editorInfo.inputType : 0;
         final int inputClass = inputType & InputType.TYPE_MASK_CLASS;
         mInputType = inputType;
+        mPrivacyPolicy = PrivacyPolicy.evaluate(mTargetApplicationPackageName, inputType,
+                null != editorInfo ? editorInfo.imeOptions : 0);
         mIsPasswordField = InputTypeUtils.isPasswordInputType(inputType)
                 || InputTypeUtils.isVisiblePasswordInputType(inputType);
         mIsNumericalPasswordField = mIsPasswordField && (inputClass == InputType.TYPE_CLASS_NUMBER);
@@ -107,7 +113,7 @@ public final class InputAttributes {
             mShouldInsertSpacesAutomatically = false;
             mDisableGestureFloatingPreviewText = false;
             mIsGeneralTextInput = false;
-            mNoLearning = false;
+            mNoLearning = !mPrivacyPolicy.getLearningAllowed();
             mIsEmailField = false;
             mSendKeyEventsMode = true;
             mIsWebField = false;
@@ -184,7 +190,8 @@ public final class InputAttributes {
             noLearning = (mEditorInfo.imeOptions & EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING) != 0;
         }
 
-        mNoLearning = noLearning || mIsPasswordField || mIsCodeField;
+        mNoLearning = noLearning || mIsPasswordField || mIsCodeField
+                || !mPrivacyPolicy.getLearningAllowed();
 
         final Map<String, String> privateImeOptions = parsePrivateImeOptions(editorInfo);
         if(privateImeOptions.containsKey("org.futo.inputmethod.latin.ForceLocale")) {

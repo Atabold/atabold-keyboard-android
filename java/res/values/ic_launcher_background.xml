@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#1E293B</color>
+    <!-- kbfr fork: the colours of the launcher icon, from the logo of the main repository (light variant): the blue field,
+         the light-blue card and the red letter, blue, white and red as in the French flag. The dev build overrides all three. -->
+    <color name="ic_launcher_background">#0969DA</color>
+    <color name="ic_launcher_card">#DDF4FF</color>
+    <color name="ic_launcher_glyph">#E1000F</color>
 </resources>

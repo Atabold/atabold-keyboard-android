@@ -1,0 +1,19 @@
+# kbfr fork: settings of your own installation.
+# Copy this file to kbfr.properties (git-ignored) and fill in endpoint and expectedCertSha256.
+# A release build stops with an explanation while either one is missing.
+
+# Your backend: a bare https origin, no path.
+# A Scaleway Serverless Function looks like https://<namespace-id>-<function>.functions.fnc.fr-par.scw.cloud
+endpoint=
+
+# SHA-256 of the certificate you sign the release APK with: 64 hex digits, colons allowed.
+# Print it with: keytool -list -v -keystore <your keystore> -alias <your alias>   (the "SHA256:" line)
+expectedCertSha256=
+
+# Your language, for the explanations of the corrections: en, fr, de, es or it.
+# It is only the first-run default of the "Language of the explanations" setting; you can change it
+# later in the settings, without rebuilding.
+explainIn=en
+
+# The language Translate writes by default: fr, en, de, es or it. Also only the first-run default.
+translateTo=fr

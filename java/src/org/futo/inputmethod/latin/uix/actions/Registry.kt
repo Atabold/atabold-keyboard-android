@@ -8,6 +8,13 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import org.futo.inputmethod.keyboard.internal.KeyboardCodesSet
 import org.futo.inputmethod.latin.R
 import org.futo.inputmethod.latin.common.Constants
+import org.futo.inputmethod.latin.kbfr.CorrectAction
+import org.futo.inputmethod.latin.kbfr.CorrectPanelAction
+import org.futo.inputmethod.latin.kbfr.FormatAction
+import org.futo.inputmethod.latin.kbfr.ImproveAction
+import org.futo.inputmethod.latin.kbfr.OnlineToggleAction
+import org.futo.inputmethod.latin.kbfr.TranslateAction
+import org.futo.inputmethod.latin.kbfr.WarmUpAction
 import org.futo.inputmethod.latin.settings.Settings
 import org.futo.inputmethod.latin.uix.Action
 import org.futo.inputmethod.latin.uix.PreferenceUtils
@@ -43,6 +50,14 @@ val AllActionsMap = mapOf(
     "left" to ArrowLeftAction,
     "right" to ArrowRightAction,
     "font_typer" to FontTyperAction,
+    // kbfr fork: the fork's actions (spec 5), appended so the indices above stay stable
+    "kbfr_warm_up" to WarmUpAction,
+    "kbfr_online" to OnlineToggleAction,
+    "kbfr_correct" to CorrectAction,
+    "kbfr_correct_panel" to CorrectPanelAction,
+    "kbfr_improve" to ImproveAction,
+    "kbfr_translate" to TranslateAction,
+    "kbfr_format" to FormatAction,
 )
 
 val ActionToId = AllActionsMap.entries.associate { it.value to it.key }

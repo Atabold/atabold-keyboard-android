@@ -1,0 +1,11 @@
+# kbfr fork: configuration for gitleaks (https://github.com/gitleaks/gitleaks).
+# It keeps the default rules and only allows the fake secrets and fixed vectors that the unit tests of the
+# fork feed to their detectors (fake keys, a fake PEM header, example identifiers, a signing vector).
+title = "Atabold Keyboard, Android fork"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Fake secrets and fixed vectors used as test inputs"
+paths = ['''src/test/java/org/futo/inputmethod/latin/kbfr/(SensitiveData|ClipboardSensitivity|BackendContract)Test\.kt''']

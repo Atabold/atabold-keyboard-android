@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- kbfr fork: strings of the fork's own features. English here, Italian in values-it. -->
+<resources>
+    <string name="kbfr_clipboard_history_disabled_text" translatable="false">To save clipboard items, you can enable clipboard history. It keeps up to %1$s items for %2$s hours (pinned items are exempt), in memory only: they are gone when the keyboard restarts. Sensitive items are masked and removed after 60 seconds.</string>
+
+    <string name="kbfr_settings_title">Correction &amp; privacy</string>
+    <string name="kbfr_connection_title">Connection</string>
+    <string name="kbfr_endpoint_title">Backend URL</string>
+    <string name="kbfr_device_key_title">Device key</string>
+    <string name="kbfr_device_key_loading">Preparing the key…</string>
+    <string name="kbfr_device_key_id">Key id: %1$s</string>
+    <string name="kbfr_device_key_storage">Stored in: %1$s</string>
+    <string name="kbfr_storage_strongbox">StrongBox chip</string>
+    <string name="kbfr_storage_tee">secure hardware (TEE)</string>
+    <string name="kbfr_storage_software">software only (not secure)</string>
+    <string name="kbfr_device_key_share">Share public key</string>
+    <string name="kbfr_device_key_copy">Copy public key</string>
+    <string name="kbfr_device_key_copied">Public key copied. Paste it within 60 seconds: the keyboard treats it as sensitive.</string>
+    <string name="kbfr_device_key_public_note">The public key is not secret. Register it on the backend with tools/register-device.mjs, then test the connection.</string>
+    <string name="kbfr_device_key_regenerate">Regenerate key</string>
+    <string name="kbfr_device_key_regenerate_confirm">The current key is deleted and the backend rejects this phone until you register the new one.</string>
+    <string name="kbfr_cancel">Cancel</string>
+    <string name="kbfr_test_connection">Test connection</string>
+    <string name="kbfr_test_running">Testing…</string>
+    <string name="kbfr_ping_registered">Registered: the backend accepts this phone</string>
+    <string name="kbfr_ping_not_registered">Not registered: the backend does not know this key</string>
+    <string name="kbfr_ping_invalid_endpoint">Invalid URL: it must start with https:// and have no path</string>
+    <string name="kbfr_ping_unreachable">Backend unreachable</string>
+    <string name="kbfr_ping_unexpected">Unexpected answer from the backend</string>
+    <string name="kbfr_ping_blocked">Blocked: integrity compromised</string>
+    <string name="kbfr_security_title">Security</string>
+    <string name="kbfr_integrity_signature">APK signed with the personal key</string>
+    <string name="kbfr_integrity_not_debuggable">Release build (not debuggable)</string>
+    <string name="kbfr_integrity_hardware_key">Device key in secure hardware</string>
+    <string name="kbfr_integrity_banner">Integrity compromised: %1$s. Online features off.</string>
+    <string name="kbfr_problem_wrong_signature">different APK signature</string>
+    <string name="kbfr_problem_debuggable">debug build</string>
+    <string name="kbfr_problem_key">key not in secure hardware</string>
+
+    <string name="kbfr_timeout_title">Timeout</string>
+    <string name="kbfr_wifi_only_title">Wi-Fi only</string>
+    <string name="kbfr_wifi_only_subtitle">Online features never use mobile data</string>
+    <string name="kbfr_privacy_title">Privacy</string>
+    <string name="kbfr_online_title">Online features</string>
+    <string name="kbfr_online_subtitle">Also from the toolbar, with the Online action</string>
+    <string name="kbfr_max_chars_title">Character limit per request</string>
+    <string name="kbfr_app_lists_title">Allowed and blocked apps</string>
+    <string name="kbfr_allowed_apps_title">Allowed apps (%1$d)</string>
+    <string name="kbfr_blocked_apps_title">Always blocked (%1$d)</string>
+    <string name="kbfr_blocked_listed">Listed apps</string>
+    <string name="kbfr_blocked_pattern">Also any app whose package name contains</string>
+    <string name="kbfr_app_lists_note">These lists are fixed in the code: changing them means rebuilding the APK. In every other app the keyboard types normally but learns and sends nothing.</string>
+    <string name="kbfr_category_messaging">Messaging</string>
+    <string name="kbfr_category_social">Social</string>
+    <string name="kbfr_category_email">Email</string>
+    <string name="kbfr_category_chatbot">Chatbots</string>
+    <string name="kbfr_category_documents">Documents</string>
+    <string name="kbfr_correct_title">Corriger / Améliorer</string>
+    <string name="kbfr_explain_in_title">Language of the explanations</string>
+    <string name="kbfr_lang_it" translatable="false">Italiano</string>
+    <string name="kbfr_lang_fr" translatable="false">Français</string>
+    <string name="kbfr_lang_de" translatable="false">Deutsch</string>
+    <string name="kbfr_lang_es" translatable="false">Español</string>
+    <string name="kbfr_lang_en" translatable="false">English</string>
+    <string name="kbfr_target_lang_title">Language of the result</string>
+    <string name="kbfr_target_lang_auto">The main language of the text</string>
+    <string name="kbfr_target_lang_fr">Always French</string>
+    <string name="kbfr_translate_foreign_title">Translate words in other languages</string>
+    <string name="kbfr_register_title">Form of address</string>
+    <string name="kbfr_register_auto">As I wrote it</string>
+    <string name="kbfr_register_tu" translatable="false">tu</string>
+    <string name="kbfr_register_vous" translatable="false">vous</string>
+    <string name="kbfr_detail_title">Explanations</string>
+    <string name="kbfr_detail_short">Short</string>
+    <string name="kbfr_detail_long">Detailed, with the rule</string>
+    <string name="kbfr_profile_title">Profile</string>
+    <string name="kbfr_profile_fast">Fast</string>
+    <string name="kbfr_profile_accurate">Accurate</string>
+    <string name="kbfr_insert_title">Insertion</string>
+    <string name="kbfr_insert_diff">Show the changes</string>
+    <string name="kbfr_insert_replace">Replace at once (with Undo)</string>
+    <string name="kbfr_action_warm_up">Warm up</string>
+    <string name="kbfr_action_online">Online</string>
+    <string name="kbfr_block_app_not_allowed">App not allowed</string>
+    <string name="kbfr_block_app_always_blocked">App always blocked</string>
+    <string name="kbfr_block_sensitive_field">Password or code field</string>
+    <string name="kbfr_block_incognito">Incognito mode</string>
+    <string name="kbfr_block_online_off">Online features off</string>
+    <string name="kbfr_block_integrity">Integrity compromised</string>
+    <string name="kbfr_block_network">Wi-Fi only: not connected to Wi-Fi</string>
+
+    <string name="kbfr_action_correct" translatable="false">Corriger</string>
+    <string name="kbfr_action_correct_panel" translatable="false">Corriger · panel</string>
+    <string name="kbfr_correct_empty">No text to correct</string>
+    <string name="kbfr_correct_too_long">Text too long (max %1$d characters)</string>
+    <string name="kbfr_correct_select_part">Select a part (max %1$d characters)</string>
+    <string name="kbfr_correct_unreadable">Cannot read the text of this field</string>
+    <string name="kbfr_correct_sending">Sending %1$d characters…</string>
+    <string name="kbfr_correct_sent">Sent %1$d characters · %2$s s</string>
+    <string name="kbfr_correct_no_errors">No errors found</string>
+    <string name="kbfr_correct_other_explanations">Other explanations</string>
+    <string name="kbfr_correct_insert">Insert</string>
+    <string name="kbfr_correct_accept_all">Accept all</string>
+    <string name="kbfr_correct_close">Close</string>
+    <string name="kbfr_text_changed">Text changed in the meantime</string>
+    <string name="kbfr_undo_corrected">Corrected</string>
+    <string name="kbfr_undo">Undo</string>
+    <string name="kbfr_err_timeout">No answer within %1$d s</string>
+    <string name="kbfr_err_not_registered">Device not registered</string>
+    <string name="kbfr_err_rate_limited">Too many requests: try again in a minute</string>
+    <string name="kbfr_err_daily_cap">Daily limit reached</string>
+    <string name="kbfr_err_provider_limit">Provider monthly budget used up</string>
+    <string name="kbfr_err_too_large">Text too long for the backend</string>
+    <string name="kbfr_err_rejected">Request rejected by the backend</string>
+    <string name="kbfr_err_upstream">The model gave no valid answer</string>
+    <string name="kbfr_err_upstream_timeout">The model did not answer in time</string>
+    <string name="kbfr_cat_spelling">Spelling</string>
+    <string name="kbfr_cat_accents">Accents</string>
+    <string name="kbfr_cat_elision">Elision</string>
+    <string name="kbfr_cat_agreement">Agreement</string>
+    <string name="kbfr_cat_past_participle_agreement">Past participle agreement</string>
+    <string name="kbfr_cat_conjugation">Conjugation</string>
+    <string name="kbfr_cat_tense_mood">Tense and mood</string>
+    <string name="kbfr_cat_article">Article</string>
+    <string name="kbfr_cat_preposition">Preposition</string>
+    <string name="kbfr_cat_pronoun">Pronoun</string>
+    <string name="kbfr_cat_word_order">Word order</string>
+    <string name="kbfr_cat_punctuation">Punctuation</string>
+    <string name="kbfr_cat_capitalization">Capitalization</string>
+    <string name="kbfr_cat_register">Register</string>
+    <string name="kbfr_cat_vocabulary">Vocabulary</string>
+    <string name="kbfr_cat_false_friend">False friend</string>
+    <string name="kbfr_cat_translation">Translation</string>
+    <string name="kbfr_cat_style">Style</string>
+    <string name="kbfr_cat_transcription">Transcription</string>
+    <string name="kbfr_cat_variant">US/UK variant</string>
+    <string name="kbfr_harmonize_variant_title">Harmonise American / British English</string>
+    <string name="kbfr_harmonize_variant_subtitle">Words of the other variety are changed to the one the text mostly uses. Off: you only get a note.</string>
+    <string name="kbfr_correct_notes">Notes (American / British English)</string>
+    <string name="kbfr_correct_notes_strip">US/UK note: %1$s</string>
+
+    <string name="kbfr_action_improve" translatable="false">Améliorer</string>
+    <string name="kbfr_action_translate" translatable="false">Traduire</string>
+    <string name="kbfr_improve_empty">No text to improve</string>
+    <string name="kbfr_translate_empty">No text to translate</string>
+    <string name="kbfr_improve_no_changes">Nothing to improve</string>
+    <string name="kbfr_translate_no_changes">The text is already in that language</string>
+    <string name="kbfr_undo_improved">Improved</string>
+    <string name="kbfr_undo_translated">Translated</string>
+    <string name="kbfr_translate_to_title">Translate into</string>
+    <string name="kbfr_block_contaminated">Sensitive data pasted in this field</string>
+    <string name="kbfr_sensitive_title">Sensitive data</string>
+    <string name="kbfr_sensitive_note">Checked on the phone before every request; the value found is never shown. Block: nothing is sent. Ask: the panel asks before sending.</string>
+    <string name="kbfr_sensitive_blocked">Not sent, sensitive data: %1$s</string>
+    <string name="kbfr_sensitive_contains">Sensitive data: %1$s</string>
+    <string name="kbfr_confirm_send">Send %1$d characters?</string>
+    <string name="kbfr_send">Send</string>
+    <string name="kbfr_kind_card">Payment card</string>
+    <string name="kbfr_kind_iban" translatable="false">IBAN</string>
+    <string name="kbfr_kind_secret">Secret / API key / password</string>
+    <string name="kbfr_kind_tax_id">Tax or national ID</string>
+    <string name="kbfr_kind_otp">OTP code</string>
+    <string name="kbfr_kind_email">Email</string>
+    <string name="kbfr_kind_phone">Phone number</string>
+    <string name="kbfr_rule_block">Block</string>
+    <string name="kbfr_rule_ask">Ask</string>
+    <string name="kbfr_rule_ignore">Ignore</string>
+    <string name="kbfr_confirm_title">Confirm before sending</string>
+    <string name="kbfr_confirm_never">Never</string>
+    <string name="kbfr_confirm_always">Always</string>
+    <string name="kbfr_confirm_above">Above a number of characters</string>
+    <string name="kbfr_confirm_above_title">Confirm above (characters)</string>
+    <string name="kbfr_sensitive_clips_fixed">Sensitive items (passwords, codes) are masked and removed after 60 seconds. Fixed, not a setting.</string>
+
+    <string name="kbfr_action_format">Format</string>
+    <string name="kbfr_format_empty">No text to format</string>
+    <string name="kbfr_format_no_changes">The text is already formatted</string>
+    <string name="kbfr_undo_formatted">Formatted</string>
+    <string name="kbfr_formatting">Formatting…</string>
+    <string name="kbfr_format_failed">Not formatted: %1$s</string>
+    <string name="kbfr_format_sensitive">Not formatted, sensitive data: %1$s</string>
+    <string name="kbfr_voice_title">Voice / Format</string>
+    <string name="kbfr_auto_format_title">Format dictation automatically</string>
+    <string name="kbfr_auto_format_subtitle">The dictated text is sent and formatted before it goes in: the only automatic request. With sensitive data set to block or ask, or if something goes wrong, it goes in as dictated.</string>
+    <string name="kbfr_format_style_title">Style</string>
+    <string name="kbfr_format_style_minimal">Minimal: punctuation, capitals, paragraphs</string>
+    <string name="kbfr_format_style_clean">Clean: also removes fillers and repetitions</string>
+    <string name="kbfr_format_fix_grammar_title">Also fix grammar</string>
+
+    <!-- About this fork: the FUTO Source First License asks for a prominent notice of the modification. -->
+    <string name="kbfr_endpoint_not_configured">Not set in this build (kbfr.properties)</string>
+    <string name="kbfr_about_title">About this fork</string>
+    <string name="kbfr_about_fork_title">Modified version of FUTO Keyboard</string>
+    <string name="kbfr_about_fork_body">This is Clavier Atabold, a modified version of FUTO Keyboard. The keyboard, the speech models and the payment screens are the work and property of FUTO Holdings, Inc., used under the FUTO Source First License 1.1-kb: thank you, FUTO. The modifications (online correction, privacy rules, this name and icon) were made by Atabold: github.com/Atabold. This version is not affiliated with or endorsed by FUTO, and FUTO does not support it. Payments made on FUTO payment screens go to FUTO, not to the author of this version. Source and licences: github.com/Atabold/atabold-keyboard-android</string>
+    <string name="kbfr_payment_notice_title">Who gets this payment</string>
+    <string name="kbfr_payment_notice_body">You are using Clavier Atabold, a modified version of FUTO Keyboard made by Atabold (github.com/Atabold). FUTO Keyboard and this payment screen belong to FUTO Holdings, Inc. Everything you pay here goes to FUTO. The author of this modified version receives nothing.</string>
+    <string name="kbfr_crash_reports_title">Offer to email crash reports to FUTO</string>
+    <string name="kbfr_crash_reports_subtitle">Off by default. After a crash, the keyboard can ask whether to email FUTO a report: stack trace, device data and settings values, never your text. FUTO does not support this modified version: report problems at github.com/Atabold instead.</string>
+    <!-- Above FUTO's "Updates Notice" on the settings home: that notice and its link are about FUTO Keyboard. -->
+    <string name="kbfr_updates_note">New versions of Clavier Atabold are published only on GitHub: github.com/Atabold/atabold-keyboard. The notice below is FUTO\'s and is about FUTO Keyboard, a different app.</string>
+</resources>

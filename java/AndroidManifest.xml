@@ -33,13 +33,19 @@
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"
         android:minSdkVersion="33" />
 
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" tools:node="remove"/>
+    <!-- kbfr fork: FUTO removes this; the "Wi-Fi only" setting needs it (kbfr/OnlineGate, spec 6) -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <!-- kbfr fork: only kbfr/BackendClient uses the network, and only towards the configured backend (spec R5) -->
+    <uses-permission android:name="android.permission.INTERNET"/>
 
     <application android:label="@string/english_ime_name"
          android:icon="@mipmap/ic_launcher"
          android:roundIcon="@mipmap/ic_launcher_round"
          android:supportsRtl="true"
-         android:allowBackup="true"
+         android:allowBackup="false"
+         android:usesCleartextTraffic="false"
+         android:fullBackupContent="false"
+         android:dataExtractionRules="@xml/kbfr_data_extraction_rules"
          android:largeHeap="true"
          android:enableOnBackInvokedCallback="true"
          android:name=".CrashLoggingApplication">

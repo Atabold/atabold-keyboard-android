@@ -62,6 +62,7 @@ import org.futo.inputmethod.engine.general.WordLearner
 import org.futo.inputmethod.latin.SuggestedWords.SuggestedWordInfo
 import org.futo.inputmethod.latin.common.Constants
 import org.futo.inputmethod.latin.settings.Settings
+import org.futo.inputmethod.latin.kbfr.KbfrState
 import org.futo.inputmethod.latin.uix.BasicThemeProvider
 import org.futo.inputmethod.latin.uix.DataStoreHelper
 import org.futo.inputmethod.latin.uix.DynamicThemeProvider
@@ -688,6 +689,9 @@ class LatinIME : InputMethodServiceCompose(), LatinIMELegacy.SuggestionStripCont
             candidatesStart,
             candidatesEnd
         )
+
+        // kbfr fork: a contaminated field is clean again once emptied (spec R3)
+        KbfrState.onSelectionUpdate(newSelStart, newSelEnd, getBaseInputConnection())
     }
 
     override fun onExtractedTextClicked() {

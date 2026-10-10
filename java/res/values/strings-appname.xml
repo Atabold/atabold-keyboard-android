@@ -1,14 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Application name for the keyboard. "FUTO" should not be translated. -->
-    <string name="english_ime_name">FUTO Keyboard</string>
+    <!-- kbfr fork: renamed so this app is not mistaken for the original FUTO Keyboard. The payment
+         screens keep saying "FUTO Keyboard": they refer to FUTO's own product (strings-payment-app.xml,
+         strings-uix.xml) and stay untouched. "Clavier Atabold" is the name in every language: the build
+         leaves out FUTO's translations of this file (build.gradle, translationsWithoutEngValues). -->
 
-    <!-- Name of Android spell checker service. "FUTO" should not be translated. -->
-    <string name="spell_checker_service_name">FUTO Spell Checker</string>
+    <!-- Application name for the keyboard. -->
+    <string name="english_ime_name">Clavier Atabold</string>
 
-    <!-- Title for Android Keyboard settings screen. "FUTO" should not be translated. -->
-    <string name="english_ime_settings">FUTO Keyboard Settings</string>
+    <!-- Name of Android spell checker service. -->
+    <string name="spell_checker_service_name">Atabold Spell Checker</string>
 
-    <!-- Title for the spell checking service settings screen. "FUTO" should not be translated. -->
-    <string name="android_spell_checker_settings">FUTO Spell Checker Settings</string>
+    <!-- Title for Android Keyboard settings screen. -->
+    <string name="english_ime_settings">Clavier Atabold</string>
+
+    <!-- Title for the spell checking service settings screen. -->
+    <string name="android_spell_checker_settings">Atabold Spell Checker Settings</string>
 </resources>

@@ -84,6 +84,9 @@ final def translationsWithoutEngValues = { final String path ->
     tasks.register("prepareResFilter${taskNameSuffix}", Copy) {
         from(sourceDir) {
             include 'values-*/**'
+            // kbfr fork: FUTO's translated app names ("Clavier FUTO"...) would replace the fork's name in every other
+            // language; without them all languages use the name in java/res/values/strings-appname.xml.
+            exclude 'values-*/strings-appname.xml'
 
             filter { String line ->
                 def matcher = line =~ /<string name="([^"]+)"[^>]*>(.+)<\/string>/
@@ -149,6 +152,8 @@ final def translationsWithoutEngValues = { final String path ->
 
 tasks.register('updateLocales', Exec) {
     workingDir = file('tools/make-keyboard-text-py')
+    // kbfr fork: on Windows, open() defaults to cp1252 and fails on the UTF-8 locale files
+    environment 'PYTHONUTF8', '1'
     commandLine = [
             System.getProperty("os.name").toLowerCase().contains("windows") ? "python" : "python3",
             "src/generate.py"
@@ -181,6 +186,37 @@ tasks.register('updateContributors') {
 
 preBuild.dependsOn updateLocales
 
+// kbfr fork: the settings of your own installation, kept out of git: your backend URL, the SHA-256 of
+// your release signing certificate and your two language choices (copy kbfr.properties.example to
+// kbfr.properties). A release build stops without the first two; other builds (unit tests, debug) fall
+// back to empty values, which leaves the online features unusable. The language choices are optional.
+final def kbfrPropertiesFile = rootProject.file("kbfr.properties")
+final def kbfrProperties = new Properties()
+if (kbfrPropertiesFile.exists()) {
+    kbfrPropertiesFile.withInputStream { kbfrProperties.load(it) }
+}
+final def kbfrEndpoint = kbfrProperties.getProperty("endpoint", "").trim()
+final def kbfrCertSha256 = kbfrProperties.getProperty("expectedCertSha256", "").trim().replace(":", "").toLowerCase()
+// First-run defaults of the two language settings, chosen at install time (both stay changeable in the
+// settings without a rebuild): the language of the explanations, and the language Translate writes.
+final def kbfrExplainIn = kbfrProperties.getProperty("explainIn", "").trim() ?: "en"
+final def kbfrTranslateTo = kbfrProperties.getProperty("translateTo", "").trim() ?: "fr"
+if (!(kbfrExplainIn in ["en", "fr", "de", "es", "it"])) {
+    throw new GradleException("kbfr.properties: explainIn must be en, fr, de, es or it (the language of the explanations)")
+}
+if (!(kbfrTranslateTo in ["fr", "en", "de", "es", "it"])) {
+    throw new GradleException("kbfr.properties: translateTo must be fr, en, de, es or it (the language Translate writes by default)")
+}
+if (kbfrEndpoint && !(kbfrEndpoint ==~ /https:\/\/[A-Za-z0-9.-]+(:[0-9]+)?/)) {
+    throw new GradleException("kbfr.properties: endpoint must be a bare https origin, for example https://example.functions.fnc.fr-par.scw.cloud")
+}
+if (kbfrCertSha256 && !(kbfrCertSha256 ==~ /[0-9a-f]{64}/)) {
+    throw new GradleException("kbfr.properties: expectedCertSha256 must be the 64 hex digits of the SHA-256 of your signing certificate")
+}
+if (gradle.startParameter.taskNames.any { it.toLowerCase().contains("release") } && (!kbfrEndpoint || !kbfrCertSha256)) {
+    throw new GradleException("A release build needs kbfr.properties with endpoint and expectedCertSha256: copy kbfr.properties.example and fill it in (see the install guide in the main repository).")
+}
+
 android {
     namespace 'org.futo.inputmethod.latin'
 
@@ -201,7 +237,18 @@ android {
         versionName getVersionName()
         versionCode getVersionCode()
 
-        applicationId 'org.futo.inputmethod.latin'
+        // kbfr fork: own id so it installs next to the original FUTO Keyboard
+        applicationId 'org.futo.inputmethod.latin.kbfr'
+
+        // kbfr fork: SHA-256 of the personal release signing certificate (spec 8) and the backend, read from
+        // kbfr.properties above. The backend is fixed in the build, not a setting: an editable URL let anyone
+        // with the unlocked phone, or an imported settings backup, send every request to another server
+        // (security review before the first release).
+        buildConfigField "String", "KBFR_EXPECTED_CERT_SHA256", "\"${kbfrCertSha256}\""
+        buildConfigField "String", "KBFR_ENDPOINT", "\"${kbfrEndpoint}\""
+        // kbfr fork: first-run defaults of the language settings (kbfr.properties: explainIn, translateTo).
+        buildConfigField "String", "KBFR_DEFAULT_EXPLAIN_IN", "\"${kbfrExplainIn}\""
+        buildConfigField "String", "KBFR_DEFAULT_TRANSLATE_TO", "\"${kbfrTranslateTo}\""
         testApplicationId 'org.futo.inputmethod.latin.tests'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = false

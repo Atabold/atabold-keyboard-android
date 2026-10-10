@@ -43,6 +43,9 @@ import androidx.compose.ui.unit.dp
 import org.futo.inputmethod.accessibility.AccessibilityUtils
 import org.futo.inputmethod.latin.R
 import org.futo.inputmethod.latin.common.Constants
+import org.futo.inputmethod.latin.kbfr.ClipboardSensitivity
+import org.futo.inputmethod.latin.kbfr.KbfrState
+import org.futo.inputmethod.latin.settings.Settings
 import org.futo.inputmethod.latin.uix.actions.clipboard.ClipboardQuickClipsEnabled
 import org.futo.inputmethod.latin.uix.theme.Typography
 
@@ -210,6 +213,8 @@ fun RowScope.QuickClipView(state: QuickClipState, dismiss: () -> Unit) {
                 ) {
                     manager!!.performHapticAndAudioFeedback(Constants.CODE_TAB, view)
                     manager!!.typeText(it.text)
+                    // kbfr fork: a sensitive clip contaminates the field (spec R3)
+                    if(state.isSensitive) KbfrState.onSensitivePaste(it.text)
                     QuickClip.markQuickClipDismissed()
                     dismiss()
                 }
@@ -317,6 +322,9 @@ object QuickClip {
         val isSensitive = clip?.description?.extras?.getBoolean(
             ClipDescription.EXTRA_IS_SENSITIVE, false
         ) == true
+                // kbfr fork: same rules as the clipboard history (spec 5.5)
+                || Settings.getInstance().current?.mInputAttributes?.mPrivacyPolicy?.clipboardSensitive == true
+                || firstItem.text?.let { ClipboardSensitivity.looksSensitive(it.toString()) } == true
 
         return getStateForItem(
             // Valid for one minute
