@@ -34,6 +34,9 @@ jobs:
           echo "JAVA_HOME=$JAVA_HOME_17_X64" >> "$GITHUB_ENV"
           echo "$JAVA_HOME_17_X64/bin" >> "$GITHUB_PATH"
           git submodule update --init --depth 1 -- libs translations java/res-large voiceinput-shared/src/main/ml
+          for repository in repo.maven.apache.org/maven2 repo1.maven.org/maven2 maven-central.storage-download.googleapis.com/maven2; do
+            curl -Ls -o /dev/null -w "$repository %{http_code}\n" "https://$repository/org/jetbrains/kotlin/kotlin-gradle-plugins-bom/2.1.0/kotlin-gradle-plugins-bom-2.1.0.pom"
+          done
       - uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
         with:
           languages: ${{ matrix.language }}
@@ -42,7 +45,7 @@ jobs:
         if: matrix.language == 'java-kotlin'
         env:
           VERSION_CODE: ${{ github.run_number }}
-        run: bash gradlew --no-daemon --no-build-cache -Pkotlin.incremental=false :compileStableDebugJavaWithJavac
+        run: bash gradlew --info --no-daemon --no-build-cache -Pkotlin.incremental=false :compileStableDebugJavaWithJavac
       - uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
         with:
           category: /language:${{ matrix.language }}
