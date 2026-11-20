@@ -22,6 +22,8 @@ Based on FUTO Keyboard at commit `70a5d390c` (2026-09-23). **Updates from FUTO a
 
 You need your own backend URL and your own signing certificate: copy `kbfr.properties.example` to `kbfr.properties`, fill it in (it also asks which language you want the explanations in, and which one *Translate* writes by default), and follow the install guide in the main repository. A release build stops with an explanation while `kbfr.properties` is missing.
 
+The [CodeQL workflow](.github/workflows/codeql.yml) scans pull requests to `main`, pushes to `main`, and the default branch every Tuesday. It compiles the stable debug keyboard and its voice input module with JDK 17 to analyze Java and Kotlin. It also scans C/C++ and Python. The debug build can run with the public dependencies alone.
+
 ## Licence
 
 [FUTO Source First License 1.1-kb](LICENSE.md), unchanged, governs this repository and the app as a whole: FUTO's code belongs to FUTO. In short, and not as legal advice: you may use the software for any purpose, but you may modify it only for non-commercial purposes, and you may share it only free of charge and for non-commercial purposes, with the licence text and the notices kept. It is a source-available licence, not an open source one. The files written from scratch for this fork are, in addition, available under the AGPL-3.0-or-later: [LICENSING.md](LICENSING.md) says which ones and why. The original AOSP keyboard code is under Apache-2.0 (see [NOTICE](NOTICE)).
